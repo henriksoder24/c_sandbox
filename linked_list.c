@@ -1,128 +1,216 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
+/* Functionality
 
-/* We need two types of elements:
+	List of defined functions:
 
+		- LinkedList (int data, bool double_link)
+		- AppendNode(struct node *, int data)
+		- TraverseList(struct node *)
+		- GetListData(struct node *)
+
+	Change Log
+
+	09.10.2022
+		- First commit
+	18.12.2022
+		- Added support for doubly-linked lists
+		- Removed old functions:
+			- InsertNode (currently being re-engineered)
+			- DeleteNode (currently being re-engineered)
+		- Re-engineered functions to support doubly-linked lists:
+			- LinkedList
+			- AppendNode
+			- TraverseList
+			- GetListData
 */
 
-// Define Node Struct
+
+// Define Head Node Struct for Single Link
+struct head {
+	int data;
+
+	// Single-linked nodes
+	struct node * next;
+	struct node * last; // Last node in the list
+
+	// double-linked nodes
+	struct dnode * _next;
+	struct dnode * _last;
+
+	// Linked List Properties
+	bool dlinked;
+	int length;
+
+	// Struct Methods
+	//void (*AppendNode)(struct node *, int data);
+};
+
+// Single-linked Node
 struct node {
 	int data;
 	struct node * next;
-	struct node * last; // This property remains NULL for all except the Head Node
 };
 
+
+// Double-linked Nodes
+struct dnode {
+	int data;
+	struct dnode * next;
+	struct dnode * previous;
+};
+
+typedef struct string_obj {
+	char * data;
+	int length;
+} string_obj;
+
+
 // Initialise new Linked List Object
-struct node * LinkedList(int data) {
+struct head * LinkedList(int data, bool double_link) {
 
-	struct node * head = NULL;
-	head = (struct node *) malloc(sizeof(struct node));
-	head->next = NULL;
-	head->last = NULL;
+	struct head * head_node = NULL;
+	head_node = (struct head *) malloc(sizeof(struct head));
 
-	if (data != 0) {
-		head->data = data;
-	}
-	return head;
-}
+	head_node -> dlinked = double_link;
+	head_node -> data = data;
+	head_node -> last = NULL;
+	head_node -> next = NULL;
+	head_node -> _next = NULL;
+	head_node -> _last = NULL;
+	head_node -> length = 1;
 
-void InsertNewNode(struct node * LinkedList, int data) {
-
-	// Add new node with data to a Linked List Object
-
-	struct node * next_node = NULL;
-	next_node = (struct node *) malloc(sizeof(struct node));
+	return head_node;
+};
 
 
-	if (data != 0) {
-		next_node->data = data;
-	}
-	next_node->next = NULL;
+void AppendNode(struct head * head, int data) {
 
-	if (LinkedList->next == NULL) {
-		LinkedList->next = next_node;
-		LinkedList->last = next_node;
-	} else if (LinkedList->next != NULL) {
-		LinkedList->last->next = next_node;
-		LinkedList->last = next_node;
-	}
-}
+	if (head -> dlinked == true) {
+		// Initialise new node in the list
+		struct dnode * new_node = NULL;
+		new_node = (struct dnode *) malloc(sizeof(struct dnode));
+		new_node -> data = data;
+		new_node -> next = NULL; 
 
-void TraverseList(struct node * LinkedList) {
-
-	// Print out the content in each node for all nodes in the order of the Linked List
-
-	int is_null = 0;
-	struct node * current_node = LinkedList;
-
-	while (is_null == 0) {
-		printf("%i\n", current_node->data);
-		if (current_node->next == NULL) {
-			printf("End of List.\n");
-			is_null = 1;
+		if (head -> length == 1) {
+			new_node -> previous = NULL;
+			head -> _next = new_node;
+			head -> _last = new_node;
 		} else {
-			current_node = current_node->next;
+			new_node -> previous = head -> _last;
+			head -> _last -> next = new_node;
+			head -> _last = new_node;
+		}
+	} else {
+		struct node * new_node = NULL;
+		new_node = (struct node *) malloc(sizeof(struct node));
+		new_node -> data = data;
+		if (head -> length == 1) {
+			head -> next = new_node;
+			head -> last = new_node;
+		} else {
+			head -> last -> next = new_node;
+			head -> last = new_node;
 		}
 	}
+	head -> length++;
 }
 
-void InsertBeforeNode(struct node * LinkedList, int insertion_point) {
 
-	// Inserts new node before the node containing specific integer
+void TraverseList(struct head * list) {
+	// Prints out data in every node of the list
 
-	/*
-	Requirements:
-		- In case there is no node with the insertion point, do nothing	
+	printf("Node #0: %i\n", list -> data);
+	int node_count = 1;
 
-	Two things are needed really, the previous nodes "next" and the next node's place in memory
-
-	 */
-
-	int dest = 0;
-	int node_exists = 0;
-	struct node * current_node = LinkedList; // Takes the head node
-
-	while (dest == 0) {
-
-		if (current_node->data == insertion_point) {
-			printf("Found node with value %i\n", insertion_point);
-
-			struct node * new_node = NULL;
-			new_node = (struct node *) malloc(sizeof(struct node));
-
-
-			dest = 1;
-		} else {
-			current_node = current_node->next;
-			if (current_node == NULL) {
-				printf("Reached the end of the list. No node with value %i exists\n", insertion_point);
-				dest = 1;
-			}
+	if (list -> dlinked == true) {
+		struct dnode * current_node = list -> _next;
+		while(current_node != NULL) {
+			printf("Node #%i: %i\n", node_count, current_node -> data);
+			node_count++;
+			current_node = current_node -> next;
+		}
+	} else {
+		struct node * current_node = list -> next;
+		while(current_node != NULL) {
+			printf("Node #%i: %i\n", node_count, current_node -> data);
+			node_count++;
+			current_node = current_node -> next;
 		}
 	}
+} 
 
 
+int * GetListData(struct head * list) {
+
+	int * arr = (int *) malloc(sizeof(int) * list -> length);
+	int node_count = 1;
+	arr[0] = list -> data;
+
+	if (list -> dlinked == true) {
+		struct dnode * current_node = list -> _next;
+		while(current_node != NULL) {
+			arr[node_count] = current_node -> data;
+			node_count++;
+			current_node = current_node -> next;
+		}
+	} else {
+		struct node * current_node = list -> next;
+		while(current_node != NULL) {
+			arr[node_count] = current_node -> data;
+			node_count++;
+			current_node = current_node -> next;
+		}
+	}
+	return arr;
+}
+
+
+void RunTests() {
+
+
+	printf("Running Linked List Test...\n");
+	int data_point = 157;
+	bool double_linked = true;
+	struct head * myList = LinkedList(157, true);
+	AppendNode(myList, 111);
+	AppendNode(myList, 222);
+	AppendNode(myList, 444);
+	AppendNode(myList, 445);
+	AppendNode(myList, 446);
+	AppendNode(myList, 447);
+	AppendNode(myList, 448);
+	TraverseList(myList);
+
+	int * ListData = GetListData(myList);
+	for (int i = 0; i<myList->length; i++) {
+		printf("Value in list: %i\n", ListData[i]);
+	}
+	// printf("Last node data point: %i\n", myList -> _last -> data);
+	// printf("List first node value: %i\n", myList->data);
+	// printf("List second node value: %i\n", myList->_next->data);
+	// printf("List last node value: %i\n", myList->_last->data);
+	// printf("List length: %i\n", myList->length);
+	// TraverseList(myList);
+	// printf("-------------------\n");
+	// struct head * sList = LinkedList(156, false);
+	// AppendNode(sList, 112);
+	// AppendNode(sList, 223);
+	// AppendNode(sList, 224);
+	// AppendNode(sList, 225);
+	// AppendNode(sList, 226);
+	// AppendNode(sList, 227);
+	// printf("List length: %i\n", sList->length);
+	// TraverseList(sList);
 }
 
 
 int main() {
-	printf("Running Linked List Test...\n");
 
-	struct node * myList = LinkedList(157);
-
-	InsertNewNode(myList, 256);
-	InsertNewNode(myList, 138);
-	InsertNewNode(myList, 120);
-	InsertNewNode(myList, 121);
-	InsertNewNode(myList, 122);
-	InsertNewNode(myList, 123);
-	InsertNewNode(myList, 124);
-	InsertNewNode(myList, 125);
-
-	InsertBeforeNode(myList, 155);
-
-	// TraverseList(myList);
+	RunTests();
 
 	return 0;
 }
