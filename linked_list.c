@@ -54,7 +54,6 @@ struct node {
 	struct node * next;
 };
 
-
 // Double-linked Nodes
 struct dnode {
 	int data;
@@ -189,22 +188,6 @@ void RunTests() {
 	for (int i = 0; i<myList->length; i++) {
 		printf("Value in list: %i\n", ListData[i]);
 	}
-	// printf("Last node data point: %i\n", myList -> _last -> data);
-	// printf("List first node value: %i\n", myList->data);
-	// printf("List second node value: %i\n", myList->_next->data);
-	// printf("List last node value: %i\n", myList->_last->data);
-	// printf("List length: %i\n", myList->length);
-	// TraverseList(myList);
-	// printf("-------------------\n");
-	// struct head * sList = LinkedList(156, false);
-	// AppendNode(sList, 112);
-	// AppendNode(sList, 223);
-	// AppendNode(sList, 224);
-	// AppendNode(sList, 225);
-	// AppendNode(sList, 226);
-	// AppendNode(sList, 227);
-	// printf("List length: %i\n", sList->length);
-	// TraverseList(sList);
 }
 
 
