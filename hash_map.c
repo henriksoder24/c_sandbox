@@ -35,7 +35,7 @@ Changelog
 		- Added function h_get(h_table * table, char * key)
 		- Added function h_dump(h_table * table)
 		- Wrote tests for h_set(), h_get(), h_delete()
-	07.01.2023
+	08.01.2023
 		- Added function h_check(h_table * table, char * key)
 		- Added additional functionality to h_set()
 			- Duplicate key handling
@@ -99,7 +99,6 @@ h_table * HashTable(void) {
 	for (int i = 0; i < TABLE_INT_SIZE; ++i) {
 		new_table -> entries[i] = NULL;
 	}
-
 	return new_table;
 }
 
@@ -112,9 +111,15 @@ bool h_check(h_table * table, char * key) {
 	if (current_slot == NULL) {
 		return false;
 	} else if (current_slot -> key == key) {
-		return true; 
-	} else if (current_slot -> next != NULL) {
-
+		return true;
+	} else {
+		while (current_slot -> next != NULL) {
+			if (current_slot -> key == key) {
+				return true;
+			}
+			current_slot = current_slot -> next;
+		}
+		return false;
 	}
 }
 
@@ -122,41 +127,41 @@ bool h_check(h_table * table, char * key) {
 void h_set(h_table * table, char * key, char * value) {
 
 	unsigned int slot = Hash(key); // this is the index in which we place the information
+	// check key existence
+	bool ex = h_check(table, key);
 
-	// allocate memory for a new entry in the hash table
+	if (ex == true) {
+		printf("ERROR: Key already exists\n");
+		exit(1);
+	}
+
+	// get entry after existence check
+	entry * entry_point = table -> entries[slot];
+	// allocate memory for a new entry
 	entry * new_entry = NULL;
 	new_entry = (entry *) malloc(sizeof(struct entry));
-
+	// insert key/value information
 	new_entry -> key = key;
 	new_entry -> value = value;
 	new_entry -> next = NULL;
 
-	if (table -> entries[slot] == NULL) {
+	if (entry_point == NULL) {
 		// this means the slot is unoccupied
-		table -> entries[slot] = new_entry;
+		entry_point = new_entry;
 		printf("The slot is now occupied with key '%s' and value '%s'\n", new_entry -> key, new_entry -> value);
+	
 	} else {
-		// this means that the slot is occupied. This is where we need additional steps:
-		// if the key already exists, return the function
-		printf("This slot is already occupied... initialising linked list...\n");
-		entry * current_slot = table -> entries[slot];
+		printf("The key has been placed into the linked list...\n");
+		bool last_node = false;
+		while (last_node != true) {
+			
 
-		if (current_slot -> key == key) {
-			printf("SORRY, an entry with this key already exists!!\n");
+			if ()
 		}
 
-		while (current_slot -> next != NULL) {
-			printf("HERE:\n");
-			if (current_slot -> key == key) {
-				printf("SORRY, an entry with this key already exists!!\n");
-				free(new_entry);
-				return;
-			}
-			current_slot = current_slot -> next;
-		}
-		current_slot -> next = new_entry;
 	}
 }
+
 
 char * h_get(h_table * table, char * key) {
 	unsigned int slot = Hash(key);
@@ -254,12 +259,20 @@ void RunTests(void) {
 	printf("Null indexes: %i\n", null_indexes_1);
 	printf("Occupied indexes: %i\n", not_null_indexes_1);
 	printf("-------------------------------------\n");
-	printf("Setting duplicate keys to test h_set()...\n");
+	printf("Setting keys, running existence checks...\n");
 
-	h_set(my_table, "Helloworld", "foo");
-	// h_set(my_table, "foo_bar", "bar");
-	h_set(my_table, "Helloworld", "bar");
+	h_set(my_table, "foo_bar", "bar_1");
+	h_set(my_table, "doo_bar", "bar_2");
 
+	printf("The key 'foo_bar' exists (T/F): %i\n", h_check(my_table, "foo_bar"));
+	printf("The key 'doo_bar' exists (T/F): %i\n", h_check(my_table, "doo_bar"));
+	printf("The key 'coo_bar' exists (T/F): %i\n", h_check(my_table, "coo_bar"));
+
+	printf("-------------------------------------\n");
+	printf("Running duplication tests...\n");
+
+	h_set(my_table, "Helloworld", "bar3");
+	printf("The key 'Helloworld' exists (T/F): %i\n", h_check(my_table, "Helloworld"));
 }
 
 
