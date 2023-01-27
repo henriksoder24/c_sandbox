@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#define TABLE_INT_SIZE 11
+#define TABLE_INT_SIZE 87
 
 /* Functionality
 
@@ -15,6 +15,7 @@ Functions:
 	- h_get(h_table * table, char * key) : returns value stored in key in table
 	- h_dump(h_table * table) : prints all contained information in table
 	- h_check(h_table * table, char * key) : checks existence of a key
+	- h_destroy(h_table * table) : frees all table memory
 	- RunTests(void) : void function running tests for above functions
 
 Changelog
@@ -43,6 +44,9 @@ Changelog
 		- Completed functionality for h_dump()
 			- Print out all values
 		- Wrote additional tests for h_set() and h_dump()
+	27.01.2023
+		- Finished h_check(), h_set(), h_dump()
+		- Started work on h_destroy()
 */
 
 typedef struct h_table {
@@ -62,6 +66,7 @@ unsigned long long int power(int base, int exp) {
 	if (exp == 0) {
 		return 1;
 	}
+
 	for (int i = 1; i<exp; i++) {
 		product *= base;
 	}
@@ -69,7 +74,7 @@ unsigned long long int power(int base, int exp) {
 }
 
 
-int CharNum(char character) {
+int charnum(char character) {
 	int char_num = (int) character;
 	return char_num;
 }
@@ -82,7 +87,7 @@ unsigned int Hash(char * string) {
 
 	for (int i=0; i<str_len; i++) {
 
-		unsigned int char_num = CharNum(string[i]);
+		unsigned int char_num = charnum(string[i]);
 		sum += char_num * power(base, str_len - i);
 	}
 	unsigned int index = sum % TABLE_INT_SIZE;
@@ -90,7 +95,7 @@ unsigned int Hash(char * string) {
 }
 
 
-h_table * HashTable(void) {
+h_table * ht_create(void) {
 
 	h_table * new_table = (h_table *) malloc(sizeof(struct h_table));
 	new_table -> entries = malloc(sizeof(struct entry *) * TABLE_INT_SIZE);
@@ -107,61 +112,39 @@ bool h_check(h_table * table, char * key) {
 
 	unsigned int slot = Hash(key);
 	entry * current_slot = table -> entries[slot];
+	// printf("Looking for key: %s\n", key);
 
 	if (current_slot == NULL) {
 		return false;
 	} else if (current_slot -> key == key) {
 		return true;
 	} else {
-		while (current_slot -> next != NULL) {
+		// printf("HERE IN CHECK\n");
+		while (current_slot != NULL) {
+			// printf("HERE IN WHILE LOOP\n");
+
+			// printf("Current key: %s\n", current_slot -> key);
 			if (current_slot -> key == key) {
+				// printf("RETURNING KEY HERE\n");
 				return true;
 			}
 			current_slot = current_slot -> next;
 		}
+		// printf("HERE IN CONDITION\n");
 		return false;
 	}
 }
 
 
-void h_set(h_table * table, char * key, char * value) {
-
-	unsigned int slot = Hash(key); // this is the index in which we place the information
-	// check key existence
-	bool ex = h_check(table, key);
-
-	if (ex == true) {
-		printf("ERROR: Key already exists\n");
-		exit(1);
-	}
-
-	// get entry after existence check
-	entry * entry_point = table -> entries[slot];
-	// allocate memory for a new entry
+entry * h_entry(char * key, char * value) {
 	entry * new_entry = NULL;
 	new_entry = (entry *) malloc(sizeof(struct entry));
-	// insert key/value information
 	new_entry -> key = key;
 	new_entry -> value = value;
 	new_entry -> next = NULL;
 
-	if (entry_point == NULL) {
-		// this means the slot is unoccupied
-		entry_point = new_entry;
-		printf("The slot is now occupied with key '%s' and value '%s'\n", new_entry -> key, new_entry -> value);
-	
-	} else {
-		printf("The key has been placed into the linked list...\n");
-		bool last_node = false;
-		while (last_node != true) {
-			
-
-			if ()
-		}
-
-	}
+	return new_entry;
 }
-
 
 char * h_get(h_table * table, char * key) {
 	unsigned int slot = Hash(key);
@@ -181,98 +164,85 @@ void h_delete(h_table * table, char * key) {	// deletes a key from the table
 }
 
 void h_dump(h_table * table) {
+	printf("\n-------------------------------------\n\n");
 	// lists out all contents in the table
+	for (int i = 0; i < TABLE_INT_SIZE; ++i) {
 
-	for (int i = 0; i < TABLE_INT_SIZE; ++i)
-	{
-		if (table -> entries[i] != NULL) {
-			printf("slot[%i]:", i);
+		entry * current_slot = table -> entries[i];
+
+		while (current_slot != NULL) {
+			if (current_slot != NULL) {
+				printf("slot[%i]=('%s','%s') ", i, current_slot -> key, current_slot -> value);
+			}
+			current_slot = current_slot -> next;
+			if (current_slot == NULL) {
+				printf("\n");
+			}
+		}
+	}
+	printf("\n-------------------------------------\n");
+}
+
+
+
+void h_set(h_table * table, char * key, char * value) {
+
+	unsigned int slot = Hash(key); // this is the index in which we place the information
+	// printf("Key '%s' gets hash %i\n", key, slot);
+	// check key existence
+	bool ex = h_check(table, key);
+
+	if (ex == true) {
+		printf("ERROR: Key '%s' already exists\n", key);
+		exit(1);
+	}
+
+	if (table -> entries[slot] == NULL) {
+		// Meaning that this slot is unoccupied
+		table -> entries[slot] = h_entry(key, value);
+	} else {
+
+		entry * current_slot = table -> entries[slot];
+		// Loop from first 'next' entry until we get to a slot where the next node has no entry
+		while (1) {
+			if (current_slot -> next == NULL) {
+				current_slot -> next = h_entry(key, value);
+				break;
+			}
+			current_slot = current_slot -> next;
 		}
 	}
 }
 
 
+void h_destroy(h_table * table) {
+	// this function collects all pointers and destroys them
+}
+
+
 void RunTests(void) {
 	printf("-------------------------------------\n");
-	printf("Running hash function test...\n");
-	unsigned int slot1 = Hash("F7LAKBMANS");
-	unsigned int slot2 = Hash("L25I5OWMK5");
-	unsigned int slot3 = Hash("6UJN5UV9YO");
-	unsigned int slot4 = Hash("PY49WSG5LM");
-	unsigned int slot5 = Hash("Helloworld");
-	unsigned int slot6 = Hash("foo_bar");
-	unsigned int slot7 = Hash("doo_bar");
 
-	printf("Index: %i\n", slot1);
-	printf("Index: %i\n", slot2);
-	printf("Index: %i\n", slot3);
-	printf("Index: %i\n", slot4);
-	printf("Index: %i\n", slot5);
-	printf("Index: %i\n", slot6);
-	printf("Index: %i\n", slot7);
+	h_table * my_table = ht_create();
 
-	printf("-------------------------------------\n");
-	printf("Initialising new hash table...\n");
-	h_table * my_table = HashTable();
-	printf("-------------------------------------\n");
-	printf("Checking null for all slots in new hash table...\n");
-	int null_indexes = 0;
-	int not_null_indexes = 0;
-	for (int i = 0; i < TABLE_INT_SIZE; ++i) {
-
-		if (my_table -> entries[i] == NULL) {
-			null_indexes++;
-		} else {
-			not_null_indexes++;
-		}
-	}
-	printf("Table size: %i\n", TABLE_INT_SIZE);
-	printf("Null indexes: %i\n", null_indexes);
-	printf("Null index errors: %i\n", not_null_indexes);
-	printf("-------------------------------------\n");
-	printf("Setting test key: 'foo' with value 'bar'...\n");
-	h_set(my_table, "foo", "bar");
-	printf("-------------------------------------\n");
-	printf("Getting value from test key 'foo'...\n");
-	char * test_res = h_get(my_table, "foo");
-	printf("Value from test key: %s\n", test_res);
-	printf("-------------------------------------\n");
-	printf("Deleting test key/value pair 'foo': 'bar'...\n");
-	h_delete(my_table, "foo");
-	printf("Getting value from test key 'foo'...\n");
-	// h_set(my_table, "foo1", "bar1");
-	char * test_res_2 = h_get(my_table, "foo");
-	printf("Value from test key: %s\n", test_res_2);
-	printf("-------------------------------------\n");
-	printf("Checking null state of slots in table...\n");
-	int null_indexes_1 = 0;
-	int not_null_indexes_1 = 0;
-	for (int i = 0; i < TABLE_INT_SIZE; ++i) {
-
-		if (my_table -> entries[i] == NULL) {
-			null_indexes_1++;
-		} else {
-			not_null_indexes_1++;
-		}
-	}
-	printf("Table size: %i\n", TABLE_INT_SIZE);
-	printf("Null indexes: %i\n", null_indexes_1);
-	printf("Occupied indexes: %i\n", not_null_indexes_1);
-	printf("-------------------------------------\n");
 	printf("Setting keys, running existence checks...\n");
+	h_set(my_table, "foo", "bar");
+	h_set(my_table, "Helloworld", "yes");
+	h_set(my_table, "foo_bar", "nono");
+	h_set(my_table, "noe_bar", "yea");
+	h_set(my_table, "F7LAKBMANS", "hey man");
+	h_set(my_table, "8wA9G6Thke", "edelweiss");
+	h_set(my_table, "RzAJKXfvgd", "cie");
+	h_set(my_table, "Ex6QGHnLXD", "verbena blossom");
+	h_set(my_table, "DB3rIs6Ssw", "solgar company");
+	h_set(my_table, "PpGTpDmaZ1", "apple");
+	h_set(my_table, "MHhUhexXkU", "logitech");
+	h_set(my_table, "1OZ3lWcqIt", "blue shields");
+	h_set(my_table, "dPxwo2jjcZ", "IKEA");
 
-	h_set(my_table, "foo_bar", "bar_1");
-	h_set(my_table, "doo_bar", "bar_2");
+	// Dump Table
+	h_dump(my_table);
 
-	printf("The key 'foo_bar' exists (T/F): %i\n", h_check(my_table, "foo_bar"));
-	printf("The key 'doo_bar' exists (T/F): %i\n", h_check(my_table, "doo_bar"));
-	printf("The key 'coo_bar' exists (T/F): %i\n", h_check(my_table, "coo_bar"));
-
-	printf("-------------------------------------\n");
-	printf("Running duplication tests...\n");
-
-	h_set(my_table, "Helloworld", "bar3");
-	printf("The key 'Helloworld' exists (T/F): %i\n", h_check(my_table, "Helloworld"));
 }
 
 
