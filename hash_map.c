@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#define TABLE_INT_SIZE 87
+#define TABLE_INT_SIZE 157
 
 /* Functionality
 
@@ -16,6 +16,7 @@ Functions:
 	- h_dump(h_table * table) : prints all contained information in table
 	- h_check(h_table * table, char * key) : checks existence of a key
 	- h_destroy(h_table * table) : frees all table memory
+	- h_total(h_table * table) : returns the total number of entries stored in table
 	- RunTests(void) : void function running tests for above functions
 
 Changelog
@@ -23,7 +24,7 @@ Changelog
 		- Initial commit: Started work on polynomial rolling hashing function
 	26.12.2022
 		- Completed rolling hash function:
-			- Using Rabin-Karp Search Algorithm
+			- Using Rabin-Karp rolling hash function
 		- Started work with table structs
 	27.12.2022
 		- Finalised type system for string hashing function
@@ -47,7 +48,11 @@ Changelog
 	27.01.2023
 		- Finished h_check(), h_set(), h_dump()
 		- Started work on h_destroy()
+	28.01.2023
+		- finished h_destroy(), h_get()
+		- added function h_total()
 */
+
 
 typedef struct h_table {
 	struct entry ** entries;
@@ -146,22 +151,33 @@ entry * h_entry(char * key, char * value) {
 	return new_entry;
 }
 
+
 char * h_get(h_table * table, char * key) {
 	unsigned int slot = Hash(key);
 	if (table->entries[slot] == NULL) {
 		return NULL;
 	} else {
-		return table -> entries[slot] -> value;
+		entry * current_slot = table->entries[slot];
+		while (current_slot != NULL) {
+			if (current_slot -> key == key) {
+				return current_slot -> value;
+			}
+			current_slot = current_slot -> next;
+		}
 	}
+	return NULL;
 }
 
-void h_delete(h_table * table, char * key) {	// deletes a key from the table
+
+void h_delete(h_table * table, char * key) {
+	// deletes a key from the table
 	unsigned int slot = Hash(key);
 	if (table -> entries[slot] != NULL) {
 		free(table -> entries[slot]);
 		table -> entries[slot] = NULL;
 	}
 }
+
 
 void h_dump(h_table * table) {
 	printf("\n-------------------------------------\n\n");
@@ -182,7 +198,6 @@ void h_dump(h_table * table) {
 	}
 	printf("\n-------------------------------------\n");
 }
-
 
 
 void h_set(h_table * table, char * key, char * value) {
@@ -215,8 +230,61 @@ void h_set(h_table * table, char * key, char * value) {
 }
 
 
+int h_total(h_table * table) {
+	// returns the total number of keys stored in the table
+	int total_items = 0;
+
+	for (int i = 0; i < TABLE_INT_SIZE; ++i) {
+		if (table -> entries[i] != NULL) {
+			total_items++;
+			entry * current_slot = table -> entries[i];
+			while (1) {
+				if (current_slot -> next != NULL) {
+					total_items++;
+					current_slot = current_slot -> next;
+				} else {
+					break;
+				}
+
+			}
+		}
+	}
+	return total_items;
+}
+
+
 void h_destroy(h_table * table) {
+
+	int pointer_no = h_total(table);
 	// this function collects all pointers and destroys them
+	// find all pointers. they are all entry pointers
+
+	struct entry ** all_pointers = NULL;
+	all_pointers = malloc(sizeof(struct entry *) * pointer_no);
+
+	printf("Size of struct entry pointer: %lu\n", sizeof(struct entry *));
+	printf("Size of pointer arrays to destroy: %lu\n", sizeof(all_pointers));
+
+
+	for (int i = 0; i < TABLE_INT_SIZE; ++i) {
+		// entry * current_slot = table -> entries[i];
+		if (table -> entries[i] != NULL) {
+			printf("Freeing slot number: %i\n", i);
+			free(table -> entries[i]);
+
+			entry * current_slot = table -> entries[i];
+			while (1) {
+				
+				if (current_slot -> next != NULL) {
+					free(current_slot -> next);
+					current_slot = current_slot -> next;
+
+				}
+			}
+
+			table -> entries[i] = NULL;
+		} 
+	}
 }
 
 
@@ -242,6 +310,40 @@ void RunTests(void) {
 
 	// Dump Table
 	h_dump(my_table);
+
+	// Check occupied indexes
+	int occ_indexes = 0;
+	int unocc_indexes = 0;
+	for (int i = 0; i < TABLE_INT_SIZE; ++i) {
+		if (my_table -> entries[i] == NULL) {
+			unocc_indexes++;
+		} else {
+			occ_indexes++;
+		}
+	}
+	printf("Total indexes: %i\n", TABLE_INT_SIZE);
+	printf("Occupied indexes: %i\n", occ_indexes);
+	printf("NUll indexes: %i\n", unocc_indexes);
+	printf("-------------------------------------\n");
+
+	// // Check occupied indexes
+	// int occ_indexes1 = 0;
+	// int unocc_indexes1 = 0;
+	// for (int i = 0; i < TABLE_INT_SIZE; ++i) {
+	// 	if (my_table -> entries[i] == NULL) {
+	// 		unocc_indexes1++;
+	// 	} else {
+	// 		occ_indexes1++;
+	// 	}
+	// }
+	// printf("-------------------------------------\n");
+	// printf("Total indexes: %i\n", TABLE_INT_SIZE);
+	// printf("Occupied indexes: %i\n", occ_indexes1);
+	// printf("NUll indexes: %i\n", unocc_indexes1);
+	printf("Total items: %i\n", h_total(my_table));
+
+	// Destroy table
+	// h_destroy(my_table);
 
 }
 
